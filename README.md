@@ -24,20 +24,20 @@ Une page web installable (PWA) qui lit un protocole étape par étape et enregis
 
 ## Mise en ligne / Veröffentlichen (GitHub Pages)
 
-1. Créer un dépôt vide `labvoix` sur GitHub.
+1. Créer un dépôt vide `Kobalt` sur GitHub.
 2. Dans ce dossier :
    ```bash
-   git remote add origin https://github.com/<compte>/labvoix.git
+   git remote add origin https://github.com/<compte>/Kobalt.git
    git push -u origin main
    ```
 3. GitHub → *Settings* → *Pages* → *Deploy from a branch* → `main` / `(root)`.
-4. Ouvrir `https://<compte>.github.io/labvoix/` sur le téléphone.
+4. Ouvrir `https://<compte>.github.io/Kobalt/` sur le téléphone.
 
 Ouvrir à la voix : « Ok Google, ouvre Kobalt » / „Hey Google, öffne Kobalt“.
 
 ## Android (APK)
 
-Si Chrome n'arrive pas à installer l'appli : télécharger `Kobalt.apk` dans les [Releases](https://github.com/gauthierdesmaizieres-sketch/labvoix/releases), l'ouvrir et autoriser l'installation. L'appli ouvre Kobalt dans Chrome et apparaît comme une appli normale pour Google Assistant et Bixby. Le code du lanceur est dans `android/`.
+Si Chrome n'arrive pas à installer l'appli : télécharger `Kobalt.apk` dans les [Releases](https://github.com/gauthierdesmaizieres-sketch/Kobalt/releases), l'ouvrir et autoriser l'installation. L'appli ouvre Kobalt dans Chrome et apparaît comme une appli normale pour Google Assistant et Bixby. Le code du lanceur est dans `android/`.
 
 ## iPhone
 

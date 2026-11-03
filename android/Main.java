@@ -10,7 +10,7 @@ import android.os.Bundle;
 public class Main extends Activity {
   @Override protected void onCreate(Bundle state) {
     super.onCreate(state);
-    Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse("https://gauthierdesmaizieres-sketch.github.io/labvoix/?app=1"));
+    Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse("https://gauthierdesmaizieres-sketch.github.io/Kobalt/?app=1"));
     Bundle extras = new Bundle();
     extras.putBinder("android.support.customtabs.extra.SESSION", null);
     i.putExtras(extras);
