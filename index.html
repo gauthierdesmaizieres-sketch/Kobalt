@@ -146,6 +146,8 @@
         <option value="wake" data-t="wakeOpt"></option>
         <option value="continuous" data-t="contOpt"></option>
       </select>
+      <select id="voice" aria-label="Voix / Stimme" hidden></select>
+      <button id="voiceTest" data-t="voiceTest" style="min-height:40px;padding:6px 10px;font-size:15px"></button>
     </div>
     <div id="zone" role="button" tabindex="0">
       <div id="stepNum"></div>
@@ -173,12 +175,12 @@
 // --- Texts and voice commands per language ---
 const L = {
   fr: {
-    speech: 'fr-FR', wake: '(?:kobalt|cobalt)',
+    speech: 'fr-FR', wake: '(?:kobalt|cobalt|kobold)',
     h1: 'Kobalt — protocole mains libres',
     pasteHint: 'Collez le protocole : 1ʳᵉ ligne = titre / n° de lot, puis une étape par ligne.',
     start: 'Démarrer',
-    cmdHint: 'Commandes : « suivant », « précédent », « répète », « note … », « minuteur 10 minutes ». Toute autre phrase est notée telle quelle. Mode mot d\'activation : commencer par « Kobalt, … ».',
-    ptt: 'Toucher pour parler', wakeOpt: 'Mot « Kobalt »', contOpt: 'Écoute continue',
+    cmdHint: 'Commandes : « suivant », « précédent », « répète », « note … », « minuteur 10 minutes ». Mains libres : seuls les commandes et « note … » comptent. Toucher pour parler : toute autre phrase est notée. Mode mot d\'activation : commencer par « Kobalt, … ».',
+    ptt: 'Toucher pour parler', wakeOpt: 'Mot « Kobalt »', contOpt: 'Mains libres (commandes + « note … »)', voiceTest: 'Tester la voix', voiceSample: 'Bonjour, je suis la voix de Kobalt. Étape 1 : peser 12,5 g d’acide.',
     prevBtn: '◀ Précédent', againBtn: '↻ Répète', nextBtn: 'Suivant ▶',
     share: 'Partager / OneNote', copy: 'Copier', csv: 'Tableau CSV', edit: 'Protocole', clear: 'Effacer journal',
     f_time: 'Heure', f_note: 'Note', f_masse: 'Masse', f_volume: 'Volume', f_quantite: 'Quantité', f_temperature: 'Température', f_duree: 'Durée', f_pression: 'Pression', f_pH: 'pH',
@@ -196,12 +198,12 @@ const L = {
     sample: 'Estérification — lot 24-117\nPeser 12,5 g d\'acide (réactif 1) dans un ballon de 250 mL.\nAjouter 100 mL de méthanol sous agitation.\nAjouter goutte à goutte 1 mL d\'acide sulfurique concentré, sous sorbonne.\nChauffer à reflux 2 heures. Noter la couleur et la température.\nRefroidir à température ambiante, puis évaporer sous vide.',
   },
   de: {
-    speech: 'de-DE', wake: '(?:kobalt|cobalt)',
+    speech: 'de-DE', wake: '(?:kobalt|cobalt|kobold)',
     h1: 'Kobalt — Protokoll freihändig',
     pasteHint: 'Protokoll einfügen: 1. Zeile = Titel / Chargennummer, danach ein Schritt pro Zeile.',
     start: 'Starten',
-    cmdHint: 'Befehle: „weiter“, „zurück“, „wiederholen“, „Notiz …“, „Timer 10 Minuten“. Jeder andere Satz wird als Notiz gespeichert. Aktivierungswort-Modus: mit „Kobalt, …“ beginnen.',
-    ptt: 'Tippen zum Sprechen', wakeOpt: 'Wort „Kobalt“', contOpt: 'Dauerhaft zuhören',
+    cmdHint: 'Befehle: „weiter“, „zurück“, „wiederholen“, „Notiz …“, „Timer 10 Minuten“. Freihändig: nur Befehle und „Notiz …“ zählen. Tippen zum Sprechen: jeder andere Satz wird notiert. Aktivierungswort: „Kobalt, …“.',
+    ptt: 'Tippen zum Sprechen', wakeOpt: 'Wort „Kobalt“', contOpt: 'Freihändig (Befehle + „Notiz …“)', voiceTest: 'Stimme testen', voiceSample: 'Hallo, ich bin die Stimme von Kobalt. Schritt 1: 12,5 g Säure einwiegen.',
     prevBtn: '◀ Zurück', againBtn: '↻ Wiederholen', nextBtn: 'Weiter ▶',
     share: 'Teilen / OneNote', copy: 'Kopieren', csv: 'Tabelle CSV', edit: 'Protokoll', clear: 'Journal löschen',
     f_time: 'Zeit', f_note: 'Notiz', f_masse: 'Masse', f_volume: 'Volumen', f_quantite: 'Stoffmenge', f_temperature: 'Temperatur', f_duree: 'Dauer', f_pression: 'Druck', f_pH: 'pH',
@@ -223,7 +225,7 @@ const L = {
 // Swiss German: Chrome's de-CH recogniser, dialect spellings of the commands, High German voice and UI.
 L.ch = { ...L.de,
   speech: 'de-CH', tts: 'de-DE',
-  cmdHint: 'Befehle: „wiiter“, „zrugg“, „nomal“, „Notiz …“, „Timer 10 Minute“. Hochdeutsch geht auch. Jeder andere Satz wird als Notiz gespeichert. Aktivierungswort-Modus: mit „Kobalt, …“ beginnen.',
+  cmdHint: 'Befehle: „wiiter“, „zrugg“, „nomal“, „Notiz …“, „Timer 10 Minute“. Hochdeutsch geht auch. Freihändig: nur Befehle und „Notiz …“ zählen. Tippen zum Sprechen: jeder andere Satz wird notiert. Aktivierungswort: „Kobalt, …“.',
   next: /^(weiter|wiiter|wyter|witer|nächst|nächscht|nächster|nächste)\b/,
   prev: /^(zurück|zrugg|zrügg|zruck|vorher|vorheriger|vorherige)\b/,
   repeat: /^(wiederholen|wiederhole|widerhole|widerhol|nomal|nomol|nomau|nochmal|noch mal)\b/,
@@ -235,16 +237,19 @@ L.ch = { ...L.de,
 
 // --- Command parser (pure, self-checked below) ---
 // wake: when set, only phrases starting with that word are handled; the rest is ignored.
-function parse(text, lang, wake) {
+// strict (hands-free listening): free speech is ignored, only commands and "note …" count, so bench talk is not logged.
+const FILLER = /^(?:(?:ok(?:ay)?|ja|jo|so|und|also|bitte|alors|bon|oui|et|euh|äh)[\s,.!]+)+/i;
+function parse(text, lang, wake, strict) {
   const d = L[lang];
   let t = text.trim();
   if (wake) {
     const w = t.match(new RegExp('^' + d.wake + '\\b[\\s,.:!]*', 'i'));
     if (!w) return { cmd: 'ignore' };
     t = t.slice(w[0].length);
-    if (!t) return { cmd: 'ignore' };
+    if (!t) return { cmd: 'wake' };
   }
-  const l = t.toLowerCase();
+  t = t.replace(FILLER, '');
+  const l = t.toLowerCase().replace(/[.!?]+$/, '');
   if (d.next.test(l)) return { cmd: 'next' };
   if (d.prev.test(l)) return { cmd: 'prev' };
   if (d.repeat.test(l)) return { cmd: 'repeat' };
@@ -255,6 +260,7 @@ function parse(text, lang, wake) {
     if (n) return { cmd: 'timer', seconds: n * d.units[m[2]] };
   }
   const note = t.match(d.note);
+  if (!note && strict) return { cmd: 'ignore' };
   return { cmd: 'note', text: note ? note[1] : t };
 }
 console.assert(parse('Suivant', 'fr').cmd === 'next');
@@ -282,6 +288,13 @@ console.assert(parse('Timer 2 Stunde', 'ch').seconds === 7200);
 console.assert(parse('Notiz Lösung hellgelb', 'ch').text === 'Lösung hellgelb');
 console.assert(parse('Kobalt, wiiter', 'ch', true).cmd === 'next');
 console.assert(parse('Kobaltblau ist schön', 'de', true).cmd === 'ignore');
+console.assert(parse('Okay, weiter.', 'de').cmd === 'next');
+console.assert(parse('ja wiiter', 'ch').cmd === 'next');
+console.assert(parse('Kobold weiter', 'de', true).cmd === 'next');
+console.assert(parse('Kobalt', 'de', true).cmd === 'wake');
+console.assert(parse('wir gehen essen', 'de', false, true).cmd === 'ignore');
+console.assert(parse('Notiz 62 Grad', 'de', false, true).text === '62 Grad');
+console.assert(parse('weiter', 'de', false, true).cmd === 'next');
 
 // --- Measured values in a note: "12,5 grammes" → masse "12,5 g" (FR and DE unit words) ---
 const UNITS = [
@@ -331,7 +344,8 @@ const $ = id => document.getElementById(id);
 // Keys keep the old 'labvoix.' prefix so journals saved before the rename to Kobalt are kept.
 const store = {
   get(k, d) { try { return JSON.parse(localStorage.getItem('labvoix.' + k)) ?? d; } catch { return d; } },
-  set(k, v) { try { localStorage.setItem('labvoix.' + k, JSON.stringify(v)); } catch {} },
+  // Quota full (~5 MB) must not lose notes silently: warn so the user exports the CSV.
+  set(k, v) { try { localStorage.setItem('labvoix.' + k, JSON.stringify(v)); } catch { if (k === 'log') alert('⚠ Speicher voll / mémoire pleine → CSV!'); } },
 };
 let lang = store.get('lang', navigator.language.startsWith('de') ? 'de' : 'fr');
 let steps = [], title = '', idx = store.get('idx', 0), log = store.get('log', []);
@@ -344,6 +358,7 @@ function applyLang() {
   $('zone').setAttribute('aria-label', T('zone'));
   if (!store.get('proto', null)) $('proto').value = T('sample');
   if (rec) rec.lang = T('speech');
+  fillVoices();
   idleText();
 }
 $('lang').onchange = () => { lang = $('lang').value; store.set('lang', lang); applyLang(); };
@@ -355,11 +370,30 @@ function loadProto() {
   idx = Math.min(idx, steps.length - 1);
 }
 
+// --- Voice: the user's pick, else the most natural female voice of the language the device offers ---
+const NATURAL = /natural|neural|online|premium|enhanced|network|wavenet/i;
+const FEMALE = /female|frau|weiblich|femme|katja|seraphina|amala|leni|louisa|marlene|vicki|anna|petra|helena|hedda|yvonne|klara|julie|denise|eloise|amélie|audrey|aurélie|celine|hortense|virginie|google (deutsch|français)/i;
+function voices() { const p = (T('tts') || T('speech')).slice(0, 2); return speechSynthesis.getVoices().filter(v => v.lang.replace('_', '-').startsWith(p)); }
+function pickVoice() {
+  const vs = voices(), saved = store.get('voice.' + lang, '');
+  return vs.find(v => v.name === saved) || vs.map(v => [v, NATURAL.test(v.name) * 2 + FEMALE.test(v.name) + v.lang.endsWith(T('tts') || T('speech')) * .5]).sort((a, b) => b[1] - a[1])[0]?.[0];
+}
+function fillVoices() {
+  const sel = $('voice'), vs = voices(), cur = pickVoice();
+  sel.innerHTML = '';
+  for (const v of vs) sel.add(new Option(v.name.replace(/^(Microsoft|Google) /, ''), v.name, false, v === cur));
+  sel.hidden = !vs.length;
+}
+speechSynthesis.onvoiceschanged = fillVoices;
+
+let utter = null; // global ref: Chrome drops onend of a garbage-collected utterance, which left the mic off after speaking
 function speak(text) {
   speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
+  const u = utter = new SpeechSynthesisUtterance(text);
   u.lang = T('tts') || T('speech');
-  u.onend = () => { if (wantListening) startRec(); };
+  const v = pickVoice();
+  if (v) u.voice = v;
+  u.onend = u.onerror = () => { if (utter === u) utter = null; if (wantListening) startRec(); };
   stopRec(); // don't transcribe our own voice
   speechSynthesis.speak(u);
 }
@@ -436,10 +470,11 @@ function startTimer(sec) {
     if (!left) { clearInterval(timerId); beep(); addNote(T('logTimerEnd')); speak(T('timerEnd')); }
   }, 500);
 }
-function beep() {
+function beep(sec = 0.6) {
   try {
     const a = new AudioContext(), o = a.createOscillator();
-    o.connect(a.destination); o.frequency.value = 880; o.start(); o.stop(a.currentTime + 0.6);
+    o.connect(a.destination); o.frequency.value = 880; o.start(); o.stop(a.currentTime + sec);
+    o.onended = () => a.close(); // browsers cap open AudioContexts: an unclosed one per beep went silent after a few
   } catch {}
 }
 
@@ -470,7 +505,7 @@ async function initRec() {
   rec.onresult = ev => {
     const r = ev.results[ev.results.length - 1];
     $('heard').textContent = '« ' + r[0].transcript + ' »';
-    if (r.isFinal) handle(r[0].transcript, $('listenMode').value === 'wake');
+    if (r.isFinal) handle(r[0].transcript);
   };
   rec.onend = () => {
     recOn = false;
@@ -478,21 +513,37 @@ async function initRec() {
     if (wantListening && keepListening() && !speechSynthesis.speaking) startRec();
     else if (!keepListening()) wantListening = false;
   };
-  rec.onerror = ev => { if (ev.error !== 'no-speech' && ev.error !== 'aborted') $('heard').textContent = T('micErr') + ev.error; };
+  rec.onerror = ev => {
+    if (ev.error === 'no-speech' || ev.error === 'aborted') return;
+    if (/not-allowed/.test(ev.error)) wantListening = false; // mic refused: stop the restart loop
+    $('heard').textContent = T('micErr') + ev.error;
+  };
 }
 function startRec() {
   if (!rec || recOn) return;
   try { rec.start(); recOn = true; $('zone').classList.add('listening'); $('heard').textContent = T('listening'); } catch {}
 }
+// Watchdog: Android Chrome sometimes drops onend (recognition or speech), which left the mic off until a tap.
+setInterval(() => {
+  if (wantListening && keepListening() && !recOn && !speechSynthesis.speaking && !speechSynthesis.pending && !document.hidden) startRec();
+}, 1500);
 function stopRec() { if (rec && recOn) rec.abort(); }
 function toggleRec() {
   if (recOn) { wantListening = false; stopRec(); }
   else { wantListening = true; speechSynthesis.cancel(); startRec(); }
 }
 $('listenMode').onchange = () => { store.set('listenMode', $('listenMode').value); idleText(); };
+$('voice').onchange = () => store.set('voice.' + lang, $('voice').value);
+$('voiceTest').onclick = () => speak(T('voiceSample'));
 
-function handle(text, wake = false) {
-  const p = parse(text, lang, wake);
+// "Kobalt" … pause … "weiter": the wake word alone arms the next phrase for 8 s.
+let armedUntil = 0;
+function handle(text) {
+  const mode = $('listenMode').value;
+  const wake = mode === 'wake' && Date.now() > armedUntil;
+  const p = parse(text, lang, wake, mode === 'continuous');
+  armedUntil = 0;
+  if (p.cmd === 'wake') { armedUntil = Date.now() + 8000; beep(0.15); return; }
   if (p.cmd === 'ignore') return;
   if (p.cmd === 'next') nextStep();
   else if (p.cmd === 'prev') prevStep();
@@ -557,7 +608,7 @@ $('clear').onclick = () => {
 };
 
 // --- Boot: reopening the app (e.g. "Hey Google, open Kobalt") goes straight back to the run ---
-$('listenMode').value = store.get('listenMode', 'ptt');
+$('listenMode').value = store.get('listenMode', 'continuous'); // hands-free by default
 const savedProto = store.get('proto', null);
 if (savedProto) $('proto').value = savedProto;
 // Design: theme-color follows the bar colour of each design.

@@ -17,6 +17,8 @@ Une page web installable (PWA) qui lit un protocole étape par étape et enregis
 | minuteur 10 minutes | Timer 10 Minuten |
 | « Kobalt, … » (mode mot d'activation) | „Kobalt, …“ (Aktivierungswort-Modus) |
 
+   Par défaut, le mode **mains libres** écoute en continu : seules les commandes et « note … » / „Notiz …“ sont pris en compte, les bavardages sont ignorés (« okay, weiter » marche aussi). Mode mot d'activation : « Kobalt » seul, puis la commande dans les 8 s. Le menu *Voix* choisit la voix de lecture (la plus naturelle féminine par défaut).
+
    En **Schweizerdeutsch** : « wiiter », « zrugg », « nomal », « Timer 10 Minute » ; le Hochdeutsch reste compris. Le texte est écrit en allemand standard. Reconnaissance du dialecte à tester : pour les mesures, le Hochdeutsch reste plus sûr.
 
 4. Exporter : *Partager* → OneNote, *Copier* → ELN, ou *Tableau CSV* → Excel.
