@@ -100,7 +100,7 @@
     --card:rgba(255,255,255,.08); --glass:rgba(255,255,255,.10); --accent:#6fb1ff; --accent2:#a6d4ff; --rec:#ff6b6b; --line:rgba(255,255,255,.16);
     --shadow:0 12px 40px rgba(0,0,0,.45); --warn:#ffc061; --motif:#a6d4ff; --motif-op:.12; --rim:rgba(255,255,255,.28); --sheen:rgba(255,255,255,.12); } }
   :root[data-theme=liquid] body { background:linear-gradient(180deg, var(--bg2), var(--bg)) fixed; }
-  :root[data-theme=liquid] body::before { content:""; position:fixed; inset:-20%; z-index:-2; pointer-events:none; filter:blur(50px); opacity:.85;
+  :root[data-theme=liquid] body::before { content:""; position:fixed; inset:-20%; z-index:-2; pointer-events:none; opacity:.85; will-change:transform; /* no filter: soft gradients alone, so drifting costs only compositing (battery) */
     background:radial-gradient(28% 24% at 22% 18%, #4aa8ff, transparent 70%), radial-gradient(26% 22% at 80% 30%, #8b6cff, transparent 70%),
                radial-gradient(30% 26% at 30% 80%, #2fd3c4, transparent 70%), radial-gradient(24% 20% at 78% 82%, #1f5fe0, transparent 70%);
     animation:drift 40s ease-in-out infinite alternate; }
