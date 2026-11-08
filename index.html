@@ -62,6 +62,7 @@
   #log li:last-child { border-bottom:0; }
   #log time { color:var(--accent); font-variant-numeric:tabular-nums; margin-right:6px; }
   .hint { font-size:14px; color:var(--muted); }
+  .hint[data-t=pasteHint] { min-height:2.8em; } /* text arrives from JS: reserve its lines so the textarea doesn't jump (CLS) */
 
   /* --- Designs: each one only overrides tokens, plus a line drawing of lab glassware behind the content --- */
   :root { --motif:#0b8bb0; --motif-op:.16; }
