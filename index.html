@@ -67,7 +67,7 @@
   .motif { position:fixed; right:0; bottom:0; width:min(92vw,520px); height:auto; color:var(--motif); opacity:var(--motif-op);
            z-index:-1; pointer-events:none; fill:none; stroke:currentColor; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
   .motif g { display:none; }
-  [data-theme=glas] .m-glas, [data-theme=kobalt] .m-kobalt, [data-theme=laborbuch] .m-laborbuch, [data-theme=abzug] .m-abzug { display:inline; }
+  [data-theme=glas] .m-glas, [data-theme=liquid] .m-glas, [data-theme=kobalt] .m-kobalt, [data-theme=laborbuch] .m-laborbuch, [data-theme=abzug] .m-abzug { display:inline; }
 
   /* Kobalt: deep cobalt blue, titration burette */
   :root[data-theme=kobalt] { --bg:#071c4d; --bg2:#0d2f7a; --fg:#f2f6ff; --muted:#a9bde6; --card:rgba(255,255,255,.08); --glass:rgba(255,255,255,.10);
@@ -91,6 +91,34 @@
   :root[data-theme=abzug] body { background:linear-gradient(180deg, var(--bg2), var(--bg)) fixed; }
   :root[data-theme=abzug] button.primary { color:#15191c; }
   :root[data-theme=abzug] #zone::before { height:6px; background:repeating-linear-gradient(135deg, var(--accent) 0 12px, #15191c 12px 24px); }
+  /* Liquid Glass (default): frosted, saturated glass capsules with a specular rim over slowly drifting colour light */
+  :root[data-theme=liquid] { --bg:#dde7f4; --bg2:#eef3fa; --fg:#0d2240; --muted:#46597a; --card:rgba(255,255,255,.42); --glass:rgba(255,255,255,.34);
+    --accent:#1f5fe0; --accent2:#4aa8ff; --rec:#e0313b; --line:rgba(255,255,255,.7); --shadow:0 12px 40px rgba(20,40,90,.16); --warn:#a35a00;
+    --motif:#1f5fe0; --motif-op:.10; --rim:rgba(255,255,255,.85); --sheen:rgba(255,255,255,.5); }
+  @media (prefers-color-scheme: dark) { :root[data-theme=liquid] { --bg:#060b1a; --bg2:#0b1430; --fg:#eef3ff; --muted:#a6b4d6;
+    --card:rgba(255,255,255,.08); --glass:rgba(255,255,255,.10); --accent:#6fb1ff; --accent2:#a6d4ff; --rec:#ff6b6b; --line:rgba(255,255,255,.16);
+    --shadow:0 12px 40px rgba(0,0,0,.45); --warn:#ffc061; --motif:#a6d4ff; --motif-op:.12; --rim:rgba(255,255,255,.28); --sheen:rgba(255,255,255,.12); } }
+  :root[data-theme=liquid] body { background:linear-gradient(180deg, var(--bg2), var(--bg)) fixed; }
+  :root[data-theme=liquid] body::before { content:""; position:fixed; inset:-20%; z-index:-2; pointer-events:none; filter:blur(50px); opacity:.85;
+    background:radial-gradient(28% 24% at 22% 18%, #4aa8ff, transparent 70%), radial-gradient(26% 22% at 80% 30%, #8b6cff, transparent 70%),
+               radial-gradient(30% 26% at 30% 80%, #2fd3c4, transparent 70%), radial-gradient(24% 20% at 78% 82%, #1f5fe0, transparent 70%);
+    animation:drift 40s ease-in-out infinite alternate; }
+  @media (prefers-color-scheme: dark) { :root[data-theme=liquid] body::before { opacity:.45; } }
+  @keyframes drift { to { transform:translate(4%, -3%) rotate(8deg) scale(1.05); } }
+  :root[data-theme=liquid] :is(button, select, #zone, #log, textarea, .badge) {
+    -webkit-backdrop-filter:blur(24px) saturate(180%); backdrop-filter:blur(24px) saturate(180%); border:1px solid var(--line);
+    box-shadow:inset 0 1px 0 var(--rim), inset 0 -1px 1px rgba(255,255,255,.10), var(--shadow); }
+  :root[data-theme=liquid] :is(button, select) { border-radius:999px; transition:transform .18s cubic-bezier(.3,1.4,.5,1), background .2s; }
+  :root[data-theme=liquid] button:active { transform:scale(.96); }
+  :root[data-theme=liquid] button.primary { background:linear-gradient(180deg, var(--accent2), var(--accent)); color:#fff; border-color:rgba(255,255,255,.35); }
+  :root[data-theme=liquid] #zone { border-radius:34px; border-width:1px; }
+  :root[data-theme=liquid] #zone::before { inset:0; height:auto; background:linear-gradient(140deg, var(--sheen), transparent 38%); pointer-events:none; }
+  :root[data-theme=liquid] #zone.listening { border-color:var(--rec); }
+  :root[data-theme=liquid] #zone.listening::before { background:linear-gradient(140deg, var(--sheen), transparent 38%); }
+  :root[data-theme=liquid] :is(#log, textarea) { border-radius:24px; }
+  :root[data-theme=liquid] #stepNum { text-transform:uppercase; font-size:13px; letter-spacing:1.2px; }
+  :root[data-theme=liquid] #stepText { font-weight:650; letter-spacing:-.3px; }
+  @media (prefers-reduced-motion: reduce) { :root[data-theme=liquid] body::before { animation:none; } }
   [hidden] { display:none !important; }
 </style>
 </head>
@@ -127,7 +155,7 @@
   <section id="setup">
     <div class="row" style="justify-content:space-between;align-items:center">
       <h1 data-t="h1"></h1>
-      <select id="theme" aria-label="Design"><option value="glas">Glas</option><option value="kobalt">Kobalt</option><option value="laborbuch">Laborbuch</option><option value="abzug">Abzug</option></select>
+      <select id="theme" aria-label="Design"><option value="liquid">Liquid Glass</option><option value="glas">Glas</option><option value="kobalt">Kobalt</option><option value="laborbuch">Laborbuch</option><option value="abzug">Abzug</option></select>
       <select id="lang" aria-label="Langue / Sprache"><option value="fr">Français</option><option value="de">Deutsch</option><option value="ch">Schweizerdeutsch</option></select>
     </div>
     <p class="hint" data-t="pasteHint"></p>
@@ -643,14 +671,15 @@ $('listenMode').value = store.get('listenMode', 'continuous'); // hands-free by 
 const savedProto = store.get('proto', null);
 if (savedProto) $('proto').value = savedProto;
 // Design: theme-color follows the bar colour of each design.
-const BAR = { glas: '#f8fbfc', kobalt: '#0d2f7a', laborbuch: '#fbfaf5', abzug: '#22282c' };
+const BAR = { liquid: matchMedia('(prefers-color-scheme: dark)').matches ? '#0b1430' : '#eef3fa', glas: '#f8fbfc', kobalt: '#0d2f7a', laborbuch: '#fbfaf5', abzug: '#22282c' };
 function applyTheme(t) {
   document.documentElement.dataset.theme = t;
   $('theme').value = t;
   for (const m of document.querySelectorAll('meta[name=theme-color]')) m.content = BAR[t];
 }
-$('theme').onchange = () => { store.set('theme', $('theme').value); applyTheme($('theme').value); };
-applyTheme(store.get('theme', 'kobalt'));
+// Key 'design' (not 'theme') so the new Liquid Glass default replaces an earlier saved pick once.
+$('theme').onchange = () => { store.set('design', $('theme').value); applyTheme($('theme').value); };
+applyTheme(store.get('design', 'liquid'));
 applyLang();
 // iPhone/iPad Safari has no install prompt: explain the manual way (iPadOS reports itself as Mac with touch).
 const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
