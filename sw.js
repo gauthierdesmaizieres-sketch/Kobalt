@@ -1,6 +1,6 @@
 // Network first, cache as fallback: the app still opens with no Wi-Fi in the lab,
 // and an update on GitHub is picked up at the next online launch.
-const CACHE = 'kobalt-v4';
+const CACHE = 'kobalt-v5';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', e => {
