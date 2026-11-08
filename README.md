@@ -21,6 +21,8 @@ Une page web installable (PWA) qui lit un protocole étape par étape et enregis
 
    En **Schweizerdeutsch** : « wiiter », « zrugg », « nomal », « Timer 10 Minute » ; le Hochdeutsch reste compris. Le texte est écrit en allemand standard. Reconnaissance du dialecte à tester : pour les mesures, le Hochdeutsch reste plus sûr.
 
+   **Voix naturelle (pack voix, allemand)** : sur le PC, VoiceStudio ouvert, `python tools/voicepack.py protocole.txt` (même texte que celui collé dans l'app) crée `protocole.kobalt-voice.json`. L'envoyer sur le téléphone, puis *Sprachpaket* dans Kobalt. Les étapes du pack sont lues avec la voix VoiceStudio, le reste avec la voix du téléphone. Modifier une étape = régénérer le pack.
+
 4. Exporter : *Partager* → OneNote, *Copier* → ELN, ou *Tableau CSV* → Excel.
    Les valeurs dictées sont reconnues et mises en colonnes : masse (mg, g, kg), volume (µL, mL, L), quantité (mmol, mol, éq), température (°C), durée (s, min, h), pression (mbar, bar), pH — en français et en allemand („12,5 Gramm“, „62 Grad“).
 

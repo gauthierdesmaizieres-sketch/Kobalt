@@ -148,6 +148,8 @@
       </select>
       <select id="voice" aria-label="Voix / Stimme" hidden></select>
       <button id="voiceTest" data-t="voiceTest" style="min-height:40px;padding:6px 10px;font-size:15px"></button>
+      <button id="pack" data-t="pack" style="min-height:40px;padding:6px 10px;font-size:15px"></button>
+      <input type="file" id="packFile" accept=".json,application/json" hidden>
     </div>
     <div id="zone" role="button" tabindex="0">
       <div id="stepNum"></div>
@@ -180,7 +182,7 @@ const L = {
     pasteHint: 'Collez le protocole : 1ʳᵉ ligne = titre / n° de lot, puis une étape par ligne.',
     start: 'Démarrer',
     cmdHint: 'Commandes : « suivant », « précédent », « répète », « note … », « minuteur 10 minutes ». Mains libres : seuls les commandes et « note … » comptent. Toucher pour parler : toute autre phrase est notée. Mode mot d\'activation : commencer par « Kobalt, … ».',
-    ptt: 'Toucher pour parler', wakeOpt: 'Mot « Kobalt »', contOpt: 'Mains libres (commandes + « note … »)', voiceTest: 'Tester la voix', voiceSample: 'Bonjour, je suis la voix de Kobalt. Étape 1 : peser 12,5 g d’acide.',
+    ptt: 'Toucher pour parler', wakeOpt: 'Mot « Kobalt »', contOpt: 'Mains libres (commandes + « note … »)', voiceTest: 'Tester la voix', pack: 'Pack voix', voiceSample: 'Bonjour, je suis la voix de Kobalt. Étape 1 : peser 12,5 g d’acide.',
     prevBtn: '◀ Précédent', againBtn: '↻ Répète', nextBtn: 'Suivant ▶',
     share: 'Partager / OneNote', copy: 'Copier', csv: 'Tableau CSV', edit: 'Protocole', clear: 'Effacer journal',
     f_time: 'Heure', f_note: 'Note', f_masse: 'Masse', f_volume: 'Volume', f_quantite: 'Quantité', f_temperature: 'Température', f_duree: 'Durée', f_pression: 'Pression', f_pH: 'pH',
@@ -203,7 +205,7 @@ const L = {
     pasteHint: 'Protokoll einfügen: 1. Zeile = Titel / Chargennummer, danach ein Schritt pro Zeile.',
     start: 'Starten',
     cmdHint: 'Befehle: „weiter“, „zurück“, „wiederholen“, „Notiz …“, „Timer 10 Minuten“. Freihändig: nur Befehle und „Notiz …“ zählen. Tippen zum Sprechen: jeder andere Satz wird notiert. Aktivierungswort: „Kobalt, …“.',
-    ptt: 'Tippen zum Sprechen', wakeOpt: 'Wort „Kobalt“', contOpt: 'Freihändig (Befehle + „Notiz …“)', voiceTest: 'Stimme testen', voiceSample: 'Hallo, ich bin die Stimme von Kobalt. Schritt 1: 12,5 g Säure einwiegen.',
+    ptt: 'Tippen zum Sprechen', wakeOpt: 'Wort „Kobalt“', contOpt: 'Freihändig (Befehle + „Notiz …“)', voiceTest: 'Stimme testen', pack: 'Sprachpaket', voiceSample: 'Hallo, ich bin die Stimme von Kobalt. Schritt 1: 12,5 g Säure einwiegen.',
     prevBtn: '◀ Zurück', againBtn: '↻ Wiederholen', nextBtn: 'Weiter ▶',
     share: 'Teilen / OneNote', copy: 'Kopieren', csv: 'Tabelle CSV', edit: 'Protokoll', clear: 'Journal löschen',
     f_time: 'Zeit', f_note: 'Notiz', f_masse: 'Masse', f_volume: 'Volumen', f_quantite: 'Stoffmenge', f_temperature: 'Temperatur', f_duree: 'Dauer', f_pression: 'Druck', f_pH: 'pH',
@@ -386,15 +388,39 @@ function fillVoices() {
 }
 speechSynthesis.onvoiceschanged = fillVoices;
 
-let utter = null; // global ref: Chrome drops onend of a garbage-collected utterance, which left the mic off after speaking
-function speak(text) {
-  speechSynthesis.cancel();
-  const u = utter = new SpeechSynthesisUtterance(text);
+// Voice pack: clips pre-rendered on the PC (tools/voicepack.py), keyed by the exact spoken text; device TTS for the rest.
+const packKey = text => 'kobalt-voice/' + encodeURIComponent(text);
+async function packClip(text) {
+  try { const r = await (await caches.open('kobalt-voice')).match(packKey(text)); return r && URL.createObjectURL(await r.blob()); } catch { return null; }
+}
+async function importPack(file) {
+  const p = JSON.parse(await file.text());
+  if (!p || typeof p.clips !== 'object') throw new Error('format');
+  const c = await caches.open('kobalt-voice');
+  for (const [text, b64] of Object.entries(p.clips))
+    await c.put(packKey(text), new Response(Uint8Array.from(atob(b64), ch => ch.charCodeAt(0)), { headers: { 'Content-Type': p.type || 'audio/mpeg' } }));
+  return Object.keys(p.clips).length;
+}
+let utter = null, clip = null; // global ref: Chrome drops onend of a garbage-collected utterance, which left the mic off after speaking
+const talking = () => speechSynthesis.speaking || speechSynthesis.pending || !!(clip && !clip.paused && !clip.ended);
+function hush() { speechSynthesis.cancel(); if (clip) clip.pause(); }
+async function speak(text) {
+  hush();
+  stopRec(); // don't transcribe our own voice
+  const me = utter = { text };
+  const done = () => { if (utter !== me) return; utter = null; if (wantListening) startRec(); };
+  const url = await packClip(text);
+  if (utter !== me) return; // a newer speak() took over
+  if (url) {
+    const a = clip = new Audio(url);
+    a.onended = a.onerror = () => { URL.revokeObjectURL(url); done(); };
+    return a.play().catch(done);
+  }
+  const u = me.u = new SpeechSynthesisUtterance(text);
   u.lang = T('tts') || T('speech');
   const v = pickVoice();
   if (v) u.voice = v;
-  u.onend = u.onerror = () => { if (utter === u) utter = null; if (wantListening) startRec(); };
-  stopRec(); // don't transcribe our own voice
+  u.onend = u.onerror = done;
   speechSynthesis.speak(u);
 }
 
@@ -510,7 +536,7 @@ async function initRec() {
   rec.onend = () => {
     recOn = false;
     $('zone').classList.remove('listening');
-    if (wantListening && keepListening() && !speechSynthesis.speaking) startRec();
+    if (wantListening && keepListening() && !talking()) startRec();
     else if (!keepListening()) wantListening = false;
   };
   rec.onerror = ev => {
@@ -525,16 +551,21 @@ function startRec() {
 }
 // Watchdog: Android Chrome sometimes drops onend (recognition or speech), which left the mic off until a tap.
 setInterval(() => {
-  if (wantListening && keepListening() && !recOn && !speechSynthesis.speaking && !speechSynthesis.pending && !document.hidden) startRec();
+  if (wantListening && keepListening() && !recOn && !talking() && !document.hidden) startRec();
 }, 1500);
 function stopRec() { if (rec && recOn) rec.abort(); }
 function toggleRec() {
   if (recOn) { wantListening = false; stopRec(); }
-  else { wantListening = true; speechSynthesis.cancel(); startRec(); }
+  else { wantListening = true; hush(); startRec(); }
 }
 $('listenMode').onchange = () => { store.set('listenMode', $('listenMode').value); idleText(); };
 $('voice').onchange = () => store.set('voice.' + lang, $('voice').value);
 $('voiceTest').onclick = () => speak(T('voiceSample'));
+$('pack').onclick = () => $('packFile').click();
+$('packFile').onchange = async e => {
+  try { alert(`${T('pack')} : ${await importPack(e.target.files[0])} ✓`); } catch (err) { alert(`${T('pack')} : ${err.message}`); }
+  e.target.value = '';
+};
 
 // "Kobalt" … pause … "weiter": the wake word alone arms the next phrase for 8 s.
 let armedUntil = 0;
